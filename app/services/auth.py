@@ -1,9 +1,6 @@
 from datetime import datetime, timedelta
 import jwt
 from app.core.config import settings
-from app.services.spotify_api.auth import get_token_with_code
-from app.services.spotify_api.user import get_spotify_user_profile
-from app.services.user import create_or_update_user
 from fastapi import Cookie, HTTPException
 from typing import Optional
 from jwt.exceptions import PyJWTError
@@ -22,16 +19,10 @@ async def get_authenticated_user_id(omood_at: Optional[str] = Cookie(None)) -> s
     except PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-async def login_with_code(code: str):
-    token_dict = get_token_with_code(code)
-    user_info = await get_spotify_user_profile(token_dict["access_token"])
-    user = await create_or_update_user(user_info, token_dict)
-    at = create_access_token(user.id)
-    return at
-
 def create_access_token(user_id: str, expires_delta: timedelta = timedelta(hours=1)):
     payload = {
         "sub": user_id,
         "exp": datetime.utcnow() + expires_delta,
     }
+    logger.bind(event="create_access_token").info(payload)
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)

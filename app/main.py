@@ -4,15 +4,14 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.api import auth, user
 from app.core.config import settings
-from app.db.session import engine
-from app.models.user import Base
+from app.db.session import init_models
 from fastapi.middleware.cors import CORSMiddleware
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 앱 시작 시 실행
-    Base.metadata.create_all(bind=engine)
+    await init_models()
     yield
     # 앱 종료 시 실행할 코드가 있다면 여기에 추가
     # 예: 세션 정리, 로그 저장 등
@@ -28,6 +27,7 @@ app = FastAPI(
 # CORS (프론트-백엔드 분리 배포시 필요)
 origins = [
     "http://127.0.0.1:3000",
+    "http://localhost:3000",
 ]
 app.add_middleware(
     CORSMiddleware,

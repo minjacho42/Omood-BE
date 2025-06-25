@@ -1,6 +1,12 @@
 from fastapi import APIRouter, Response
+from fastapi.params import Depends
 from pydantic import BaseModel
-from app.services.auth import login_with_code
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.session import get_db
+from app.services.auth import create_access_token
+from app.services.user import create_or_update_user
+from app.utils.logging import logger
 
 router = APIRouter()
 
@@ -19,3 +25,25 @@ async def login(payload: CodePayload, response: Response):
         secure=False,
     )
     return {"message": "Login success"}
+
+@router.post("/google/callback")
+async def google_callback(payload: CodePayload, response: Response, db: AsyncSession = Depends(get_db)):
+    logger.bind(event="api endpoint").info("Google callback")
+    user = await create_or_update_user(
+        provider="google",
+        provider_code=payload.code,
+        db=db
+    )
+    at = create_access_token(
+        user_id = user.id
+    )
+    response.set_cookie(
+        key="omood_at",
+        value=at,
+        httponly=True,
+        max_age=3600,
+        samesite="lax",
+        secure=False,
+    )
+    logger.bind(event="api endpoint").info(at)
+    return {"message": "Google callback success"}
