@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from app.api import auth, user
+from app.api import auth, user, snippet
 from app.core.config import settings
 from app.db.session import init_models
 from fastapi.middleware.cors import CORSMiddleware
@@ -41,6 +41,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(user.router, prefix="/user", tags=["user"])
 
+app.include_router(snippet.router, prefix="/snippet", tags=["snippet"])
 # 기본 헬스체크 엔드포인트
 @app.get("/", tags=["health"])
 def health_check():

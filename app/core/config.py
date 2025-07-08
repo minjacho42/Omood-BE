@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     MONGODB_URI: str
     MONGO_DATABASE: str
     DEBUG: bool = False
+    CLOUDFLARE_S3_URI: str
+    CLOUDFLARE_ACCESS_KEY_ID: str
+    CLOUDFLARE_SECRET_ACCESS_KEY: str
+    CLOUDFLARE_BUCKET_NAME: str
 
     class Config:
         env_file = ".env"
