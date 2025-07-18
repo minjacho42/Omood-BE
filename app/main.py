@@ -28,6 +28,7 @@ app = FastAPI(
 origins = [
     "http://127.0.0.1:3000",
     "http://localhost:3000",
+    "https://omood-fe.vercel.app",
 ]
 app.add_middleware(
     CORSMiddleware,

@@ -42,8 +42,8 @@ async def google_callback(payload: CodePayload, response: Response, db: AsyncSes
         value=at,
         httponly=True,
         max_age=3600,
-        samesite="lax",
-        secure=False,
+        samesite="none",
+        secure=True,
     )
     logger.bind(event="api endpoint").info(at)
     return {"message": "Google callback success"}

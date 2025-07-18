@@ -4,3 +4,4 @@ logs
 *.db
 *.rdb
 .idea
+__pycache__
