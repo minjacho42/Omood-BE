@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.services.auth import create_access_token
+from app.services.auth import create_access_token, get_authenticated_user_id
 from app.services.user import create_or_update_user
 from app.utils.logging import logger
 
@@ -12,19 +12,6 @@ router = APIRouter()
 
 class CodePayload(BaseModel):
     code: str
-
-@router.post("/login")
-async def login(payload: CodePayload, response: Response):
-    access_token = await login_with_code(payload.code)
-    response.set_cookie(
-        key="omood_at",
-        value=access_token,
-        httponly=True,
-        max_age=3600,
-        samesite="lax",
-        secure=False,
-    )
-    return {"message": "Login success"}
 
 @router.post("/google/callback")
 async def google_callback(payload: CodePayload, response: Response, db: AsyncSession = Depends(get_db)):
@@ -47,3 +34,18 @@ async def google_callback(payload: CodePayload, response: Response, db: AsyncSes
     )
     logger.bind(event="api endpoint").info(at)
     return {"message": "Google callback success"}
+
+
+@router.get("/me")
+async def me(user_id: str = Depends(get_authenticated_user_id)):
+    return {"user_id": user_id}
+
+@router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie(
+        key="omood_at",
+        httponly=True,
+        samesite="none",
+        secure=True
+    )
+    return {"message": "Logged out"}

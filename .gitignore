@@ -5,3 +5,4 @@ logs
 *.rdb
 .idea
 __pycache__
+.DS_Store

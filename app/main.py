@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from app.api import auth, user, snippet
+from app.api import auth, user, memo
 from app.core.config import settings
 from app.db.session import init_models
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,9 +26,9 @@ app = FastAPI(
 
 # CORS (프론트-백엔드 분리 배포시 필요)
 origins = [
-    "http://127.0.0.1:3000",
-    "http://localhost:3000",
-    "https://omood-fe.vercel.app",
+    # "http://127.0.0.1:3000",
+    # "http://localhost:3000",
+    "https://omood.minjacho.com",
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -42,7 +42,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(user.router, prefix="/user", tags=["user"])
 
-app.include_router(snippet.router, prefix="/snippet", tags=["snippet"])
+app.include_router(memo.router, prefix="/memo", tags=["memo"])
 # 기본 헬스체크 엔드포인트
 @app.get("/", tags=["health"])
 def health_check():
