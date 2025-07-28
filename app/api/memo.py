@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, Form, Query, Request
+from fastapi import APIRouter, Depends, UploadFile, Form, Query, Request, Body
 from typing import Optional, List, Any
 from app.utils.logging import logger
 from app.db.mongo.client import get_mongodb
@@ -7,6 +7,8 @@ from app.services.memo import (
     create_memo,
     get_user_memos_by_date_range,
     delete_memo,
+    get_memo,
+    modify_memo
 )
 from app.models.memo import (
     MemoResponse
@@ -66,4 +68,36 @@ async def get_list_of_memos_api(
 ):
     return await get_user_memos_by_date_range(user_id, tz, start_date, end_date, db)
 
-# @router.get("/organize", response_model=List[MemoResponse], summary="Get organized memos")
+@router.get("/{memo_id}", response_model=MemoResponse, summary="Get a memo by id")
+async def get_memo_by_id_api(
+        memo_id: str,
+        user_id: str = Depends(get_authenticated_user_id),
+        db: Any = Depends(get_mongodb)
+):
+    return await get_memo(user_id, memo_id, db)
+
+@router.put("/{memo_id}", response_model=MemoResponse, summary="Update a memo by id")
+async def update_memo_by_id_api(
+        request: Request,
+        memo_id: str,
+        user_id: str = Depends(get_authenticated_user_id),
+        content: str = Form(...),
+        tags: str = Form(None),
+        keep_attachments: str = Form(...),
+        db: Any = Depends(get_mongodb)
+):
+    form = await request.form()
+    new_files = [(k, v) for k, v in form.items() if k.rsplit("_", 1)[0] == "new_image" or k.rsplit("_", 1)[0] == "new_audio"]
+    logger.info(new_files)
+    tag_list = tags.split(',') if tags else []
+    content = content.strip()
+    keep_attachment_list = keep_attachments.split(',') if keep_attachments else []
+    return await modify_memo(
+        memo_id=memo_id,
+        user_id=user_id,
+        tags=tag_list,
+        content=content,
+        new_attachments=new_files,
+        keep_attachments=keep_attachment_list,
+        db=db
+    )

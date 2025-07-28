@@ -2,6 +2,8 @@ from bson import ObjectId
 from app.models.memo import Memo
 from datetime import datetime
 from app.utils.logging import logger
+from typing import List
+from app.models.memo import MemoAttachment
 
 def fix_mongo_id(doc: dict) -> dict:
     if "_id" in doc:
@@ -20,14 +22,30 @@ async def delete_memo(memo_id: str, db):
     result = await memo_collections.delete_one({"_id": ObjectId(memo_id)})
     return result.deleted_count
 
-async def update_memo(memo_id: str, updated_fields: dict, db):
+async def update_memo(memo_id: str, user_id: str, content: str, tags: List[str], attachments: List[MemoAttachment], db):
     memo_collections = db["memos"]
-    updated_fields["updated_at"] = datetime.utcnow()
-    result = await memo_collections.update_one(
-        {"_id": ObjectId(memo_id)},
-        {"$set": updated_fields}
+    # Prepare update document
+    updated_at = datetime.utcnow()
+    # Convert attachments to dicts
+    attachment_dicts = [att.model_dump(by_alias=True) for att in attachments]
+    update_doc = {
+        "content": content,
+        "tags": tags,
+        "attachments": attachment_dicts,
+        "updated_at": updated_at,
+    }
+    # Perform the update
+    await memo_collections.update_one(
+        {"_id": ObjectId(memo_id), "user_id": user_id},
+        {"$set": update_doc}
     )
-    return result.modified_count
+    # Fetch and return the updated document as Memo
+    updated_doc = await memo_collections.find_one(
+        {"_id": ObjectId(memo_id), "user_id": user_id}
+    )
+    if not updated_doc:
+        return None
+    return Memo(**fix_mongo_id(updated_doc))
 
 async def get_memo_by_id(memo_id: str, db):
     memo_collections = db["memos"]

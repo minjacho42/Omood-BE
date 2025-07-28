@@ -26,8 +26,7 @@ app = FastAPI(
 
 # CORS (프론트-백엔드 분리 배포시 필요)
 origins = [
-    # "http://127.0.0.1:3000",
-    # "http://localhost:3000",
+    "http://127.0.0.1:3000",
     "https://omood.minjacho.com",
 ]
 app.add_middleware(
