@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, UploadFile, Form, Query, Request, Body
 from typing import Optional, List, Any
 from app.utils.logging import logger
-from app.db.mongo.client import get_mongodb
+from app.db.mongo.client import depends_get_mongodb
 from app.services.auth import get_authenticated_user_id
 from app.services.memo import (
     create_memo,
@@ -22,7 +22,7 @@ async def post_memo(
     content: str = Form(...),
     tags: str = Form(None),
     user_id: str = Depends(get_authenticated_user_id),
-    db: Any = Depends(get_mongodb)
+    db: Any = Depends(depends_get_mongodb)
 ):
     form = await request.form()
     logger.info(form)
@@ -42,7 +42,7 @@ async def post_memo(
 async def delete_memo_api(
     memo_id: str,
     user_id: str = Depends(get_authenticated_user_id),
-    db: Any = Depends(get_mongodb)
+    db: Any = Depends(depends_get_mongodb)
 ):
     await delete_memo(user_id, memo_id, db)
     return {"message": "memo deleted successfully"}
@@ -64,7 +64,7 @@ async def get_list_of_memos_api(
         start_date: str = Query(...),
         end_date: str = Query(...),
         user_id: str = Depends(get_authenticated_user_id),
-        db: Any = Depends(get_mongodb)
+        db: Any = Depends(depends_get_mongodb)
 ):
     return await get_user_memos_by_date_range(user_id, tz, start_date, end_date, db)
 
@@ -72,7 +72,7 @@ async def get_list_of_memos_api(
 async def get_memo_by_id_api(
         memo_id: str,
         user_id: str = Depends(get_authenticated_user_id),
-        db: Any = Depends(get_mongodb)
+        db: Any = Depends(depends_get_mongodb)
 ):
     return await get_memo(user_id, memo_id, db)
 
@@ -84,7 +84,7 @@ async def update_memo_by_id_api(
         content: str = Form(...),
         tags: str = Form(None),
         keep_attachments: str = Form(...),
-        db: Any = Depends(get_mongodb)
+        db: Any = Depends(depends_get_mongodb)
 ):
     form = await request.form()
     new_files = [(k, v) for k, v in form.items() if k.rsplit("_", 1)[0] == "new_image" or k.rsplit("_", 1)[0] == "new_audio"]

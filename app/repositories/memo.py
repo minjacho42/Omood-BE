@@ -1,9 +1,8 @@
 from bson import ObjectId
-from app.models.memo import Memo
+from app.models.memo import Memo, MemoAttachment
 from datetime import datetime
 from app.utils.logging import logger
 from typing import List
-from app.models.memo import MemoAttachment
 
 def fix_mongo_id(doc: dict) -> dict:
     if "_id" in doc:
