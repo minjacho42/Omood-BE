@@ -1,4 +1,4 @@
-from app.utils.redis import redis_client
+from app.core.config import settings
 from app.models.session import Session
 import app.repositories.session as session_repo
 from app.utils.logging import logger
@@ -6,7 +6,7 @@ from app.utils.redis import redis_client
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from fastapi.exceptions import HTTPException
-from typing import List
+from typing import List, Dict
 
 async def create_session(user_id, subject:str, goal:str, duration: int, break_duration: int, tags: List[str], created_at: str, db) -> Session:
     try:
@@ -36,6 +36,8 @@ async def get_session(user_id: str, session_id: str, db) -> Session:
         if target_session.user_id != user_id:
             raise HTTPException(status_code=403, detail="Forbidden")
         return target_session
+    except HTTPException as e:
+        raise e
     except Exception as e:
         logger.error(e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -53,11 +55,13 @@ async def get_current_session(user_id: str, db) -> Session:
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-async def update_session(session_id: str, user_id: str, db, status: str=None, updated_at: str=None, reflection: str=None):
+async def update_session(session_id: str, user_id: str, db, status: str=None, updated_at: str=None, reflection: str=None, session_info: Dict=None):
     try:
         updated_at = datetime.strptime(updated_at, '%Y-%m-%dT%H:%M:%S.%fZ')
         target_session = await session_repo.get_session_by_id(session_id, db)
-        if target_session.user_id != user_id:
+        if not target_session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        if target_session.user_id != user_id and user_id != settings.ADMIN_USER_ID:
             raise HTTPException(status_code=403, detail="Forbidden")
         if status:
             if status == "started":
@@ -71,7 +75,7 @@ async def update_session(session_id: str, user_id: str, db, status: str=None, up
                 await redis_client.set(f"current_session:{user_id}", session_id)
             else:
                 await redis_client.delete(f"current_session:{user_id}")
-        return await session_repo.update_session(session_id, updated_at, status, reflection, db)
+        return await session_repo.update_session(session_id, updated_at, status, reflection, session_info, db)
     except HTTPException as e:
         raise e
     except Exception as e:

@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     CLOUDFLARE_ACCESS_KEY_ID: str
     CLOUDFLARE_SECRET_ACCESS_KEY: str
     CLOUDFLARE_BUCKET_NAME: str
+    ADMIN_USER_ID: str
 
     class Config:
         env_file = ".env"

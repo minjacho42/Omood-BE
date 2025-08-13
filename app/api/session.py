@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends, Body, Query, HTTPException
 from typing import Any, List
 from datetime import datetime
+
+from sqlalchemy.orm.sync import update
+
 from app.services.session import (
     create_session,
     get_user_session_by_date_range,
@@ -23,7 +26,6 @@ async def post_session_api(
     break_duration: int = Body(..., description="Break duration in minutes"),
     tags: List[str] = Body(default=[], description="Tags array"),
     status: str = Body(..., description="Session status e.g., 'pending'"),
-    completed: bool = Body(False, description="Completed flag"),
     created_at: str = Body(..., description="Creation timestamp, ISO format"),
     user_id: str = Depends(get_authenticated_user_id),
     db: Any = Depends(depends_get_mongodb)
@@ -95,19 +97,38 @@ async def update_session_status_api(
         raise HTTPException(status_code=404, detail="Session not found or not authorized")
     return updated
 
-@router.put("/{session_id}", summary="Update session reflection", response_model=SessionResponse)
+@router.put("/{session_id}", summary="Update session", response_model=SessionResponse)
 async def update_session_api(
     session_id: str,
-    reflection: str = Body(..., description="Session reflection"),
+    subject: str = Body(None, description="Session subject"),
+    goal: str | None = Body(None, description="Session goal"),
+    duration: int = Body(None, description="Focus duration in minutes"),
+    break_duration: int = Body(None, description="Break duration in minutes"),
+    tags: List[str] = Body(default=[], description="Tags array"),
+    status:str = Body(None, description="New session status"),
+    reflection: str = Body(None, description="Session reflection"),
     updated_at: str = Body(..., description="Update timestamp in ISO format"),
     user_id: str = Depends(get_authenticated_user_id),
     db: Any = Depends(depends_get_mongodb)
 ):
+    updated_session_field = {}
+    if subject:
+        updated_session_field["subject"] = subject
+    if goal:
+        updated_session_field["goal"] = goal
+    if duration:
+        updated_session_field["duration"] = duration
+    if break_duration:
+        updated_session_field["break_duration"] = break_duration
+    if tags:
+        updated_session_field["tags"] = tags
     updated = await update_session(
         session_id=session_id,
         user_id=user_id,
+        status=status,
         reflection=reflection,
         updated_at=updated_at,
+        session_info=updated_session_field,
         db=db
     )
     if not updated:

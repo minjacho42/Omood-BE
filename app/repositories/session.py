@@ -1,8 +1,10 @@
 from bson import ObjectId
+from requests import session
+
 from app.models.session import Session
 from datetime import datetime
 from app.utils.logging import logger
-from typing import List
+from typing import List, Dict
 
 def fix_mongo_id(doc: dict) -> dict:
     if "_id" in doc:
@@ -22,17 +24,18 @@ async def delete_session(session_id: str, db):
     result = await session_collections.delete_one({"_id": ObjectId(session_id)})
     return result.deleted_count
 
-async def update_session(session_id: str, updated_at: datetime, status: str, reflection: str | None, db):
+async def update_session(session_id: str, updated_at: datetime, status: str, reflection: str | None, session_info: Dict, db):
     session_collections = db["sessions"]
     update_doc = {
         "updated_at": updated_at,
     }
+    if session_info:
+        for key, value in session_info.items():
+            update_doc[key] = value
     if status:
         update_doc["status"] = status
     if status == "started":
         update_doc["started_at"] = updated_at
-    elif status == "completed":
-        update_doc["completed"] = True
     if reflection:
         update_doc["reflection"] = reflection
     await session_collections.update_one(
@@ -50,7 +53,10 @@ async def update_session(session_id: str, updated_at: datetime, status: str, ref
 async def get_session_by_id(session_id: str, db):
     session_collections = db["sessions"]
     result = await session_collections.find_one({"_id": ObjectId(session_id)})
-    return Session(**fix_mongo_id(result))
+    if result:
+        return Session(**fix_mongo_id(result))
+    else:
+        return None
 
 async def get_user_session_by_date(user_id: str, date: datetime, db):
     session_collections = db["sessions"]

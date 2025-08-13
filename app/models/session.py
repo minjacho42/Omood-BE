@@ -15,8 +15,7 @@ class Session(BaseModel):
     started_at: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
-    status: Literal["pending", "started", "paused", "completed", "cancelled"]
-    completed: Optional[bool] = False
+    status: Literal["pending", "started", "paused", "completed", "reviewed"]
     reflection: Optional[str] = None
     class Config:
         allow_population_by_field_name = True
@@ -35,8 +34,7 @@ class SessionResponse(BaseModel):
     started_at: Optional[datetime] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
-    status: Literal["pending", "started", "paused", "completed", "cancelled"]
-    completed: Optional[bool] = False
+    status: Literal["pending", "started", "paused", "completed", "reviewed"]
     reflection: Optional[str] = None
 
 class ReflectionUpdate(BaseModel):
