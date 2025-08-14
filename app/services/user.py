@@ -4,6 +4,9 @@ from app.services.google_api.user import get_user_with_token as google_user
 from app.models.user import User
 from app.repositories.user import update_user, get_user_by_id
 from fastapi import HTTPException
+from app.utils.logging import logger
+
+logger = logger.bind(layer="service", module="user")
 
 async def create_or_update_user(provider: str, provider_code: str, db: AsyncSession) -> User:
     if provider == "google":

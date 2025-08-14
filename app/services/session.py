@@ -8,6 +8,8 @@ from zoneinfo import ZoneInfo
 from fastapi.exceptions import HTTPException
 from typing import List, Dict
 
+logger = logger.bind(layer="service", module="session")
+
 async def create_session(user_id, subject:str, goal:str, duration: int, break_duration: int, tags: List[str], created_at: str, db) -> Session:
     try:
         new_session = Session(
@@ -22,7 +24,21 @@ async def create_session(user_id, subject:str, goal:str, duration: int, break_du
         )
         created_session = await session_repo.add_session(new_session, db)
         await redis_client.set(f"current_session:{user_id}", created_session.id)
-        logger.info(created_session)
+        logger_info = {
+            "subject": subject,
+            "goal": goal,
+            "duration": duration,
+            "break_duration": break_duration,
+            "tags": tags,
+            "status": created_session.status,
+            "created_at": created_session.created_at.isoformat(),
+        }
+        logger.bind(
+            event="create_session",
+            session_id=created_session.id,
+            user_id=user_id,
+            **logger_info
+        ).info(f"Session created successfully under user {user_id} with session ID {created_session.id}")
         return created_session
     except Exception as e:
         logger.error(e)
@@ -59,11 +75,14 @@ async def update_session(session_id: str, user_id: str, db, status: str=None, up
     try:
         updated_at = datetime.strptime(updated_at, '%Y-%m-%dT%H:%M:%S.%fZ')
         target_session = await session_repo.get_session_by_id(session_id, db)
+        logger_info = {}
         if not target_session:
             raise HTTPException(status_code=404, detail="Session not found")
         if target_session.user_id != user_id and user_id != settings.ADMIN_USER_ID:
             raise HTTPException(status_code=403, detail="Forbidden")
         if status:
+            logger_info["old_status"] = target_session.status
+            logger_info["new_status"] = status
             if status == "started":
                 await redis_client.zadd(
                     "session_queue",
@@ -75,7 +94,21 @@ async def update_session(session_id: str, user_id: str, db, status: str=None, up
                 await redis_client.set(f"current_session:{user_id}", session_id)
             else:
                 await redis_client.delete(f"current_session:{user_id}")
-        return await session_repo.update_session(session_id, updated_at, status, reflection, session_info, db)
+        if reflection:
+            logger_info["old_status"] = target_session.status
+            logger_info["new_status"] = "reviewed"
+        if session_info:
+            for key, value in session_info.items():
+                logger_info[f"old_{key}"] = target_session.model_dump(by_alias=True).get(key)
+                logger_info[f"new_{key}"] = value
+        updated_session = await session_repo.update_session(session_id, updated_at, status, reflection, session_info, db)
+        logger.bind(
+            event="update_session",
+            user_id=user_id,
+            session_id=session_id,
+            **logger_info
+        ).info(f"Session updated successfully under user {user_id} with session ID {session_id}")
+        return updated_session
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -91,6 +124,15 @@ async def delete_session(user_id: str, session_id: str, db):
             raise HTTPException(status_code=403, detail="Not authorized")
         delete_cnt = await session_repo.delete_session(session_id, db)
         if delete_cnt > 0:
+            if target_session.status == "started":
+                await redis_client.zrem("session_queue", session_id)
+                await redis_client.delete(f"current_session:{user_id}")
+            elif target_session.status in {"pending", "paused"}:
+                await redis_client.delete(f"current_session:{user_id}")
+            logger.bind(
+                event="delete_session",
+                user_id=user_id,session_id=session_id
+            ).info(f"Session deleted successfully under user {user_id} with session ID {session_id}")
             return "Success"
         else:
             raise HTTPException(status_code=404, detail="Session not found")

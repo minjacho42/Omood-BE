@@ -1,10 +1,11 @@
 from bson import ObjectId
 from requests import session
-
 from app.models.session import Session
 from datetime import datetime
 from app.utils.logging import logger
 from typing import List, Dict
+
+logger = logger.bind(layer="repository", module="session")
 
 def fix_mongo_id(doc: dict) -> dict:
     if "_id" in doc:
@@ -24,7 +25,7 @@ async def delete_session(session_id: str, db):
     result = await session_collections.delete_one({"_id": ObjectId(session_id)})
     return result.deleted_count
 
-async def update_session(session_id: str, updated_at: datetime, status: str, reflection: str | None, session_info: Dict, db):
+async def update_session(session_id: str, updated_at: datetime, status: str, reflection: str | None, session_info: Dict, db) -> Session:
     session_collections = db["sessions"]
     update_doc = {
         "updated_at": updated_at,
@@ -50,7 +51,7 @@ async def update_session(session_id: str, updated_at: datetime, status: str, ref
         return None
     return Session(**fix_mongo_id(updated_doc))
 
-async def get_session_by_id(session_id: str, db):
+async def get_session_by_id(session_id: str, db) -> Session | None:
     session_collections = db["sessions"]
     result = await session_collections.find_one({"_id": ObjectId(session_id)})
     if result:

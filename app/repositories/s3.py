@@ -2,8 +2,11 @@ from app.db.cloudflare.s3 import s3_client as client
 from app.core.config import settings
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from app.utils.logging import logger
 
 executor = ThreadPoolExecutor()
+
+logger = logger.bind(layer="repository", module="s3")
 
 async def put_object(object_key, object_content):
     loop = asyncio.get_event_loop()

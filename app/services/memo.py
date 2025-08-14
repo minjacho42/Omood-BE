@@ -10,6 +10,8 @@ from zoneinfo import ZoneInfo
 from fastapi import UploadFile
 from fastapi.exceptions import HTTPException
 
+logger = logger.bind(layer="service", module="memo")
+
 async def create_memo(user_id: str, tags: List[str], content: str, attachments: List[Tuple[str, UploadFile]]
 , db):
     try:

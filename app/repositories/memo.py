@@ -4,6 +4,8 @@ from datetime import datetime
 from app.utils.logging import logger
 from typing import List
 
+logger = logger.bind(layer="repository", module="memo")
+
 def fix_mongo_id(doc: dict) -> dict:
     if "_id" in doc:
         doc["_id"] = str(doc["_id"])

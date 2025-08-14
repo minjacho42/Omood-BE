@@ -3,6 +3,9 @@ from typing import Optional
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from app.utils.logging import logger
+
+logger = logger.bind(layer="repository", module="user")
 
 async def get_user_by_id(user_id: str, db: AsyncSession) -> Optional[User]:
     result = await db.execute(select(User).where(User.id == user_id))

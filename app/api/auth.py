@@ -15,7 +15,7 @@ class CodePayload(BaseModel):
 
 @router.post("/google/callback")
 async def google_callback(payload: CodePayload, response: Response, db: AsyncSession = Depends(get_db)):
-    logger.bind(event="api endpoint").info("Google callback")
+    # logger.bind(event="api endpoint").info("Google callback")
     user = await create_or_update_user(
         provider="google",
         provider_code=payload.code,
