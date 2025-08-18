@@ -25,7 +25,8 @@ app = FastAPI(
     description="Spotify 기반 오늘의 Mood 인사이트 API",
     version="0.1.0",
     debug=settings.DEBUG,
-    lifespan=lifespan
+    lifespan=lifespan,
+    redirect_slashes=False,
 )
 
 # CORS (프론트-백엔드 분리 배포시 필요)

@@ -19,6 +19,7 @@ from app.db.mongo.client import depends_get_mongodb
 router = APIRouter()
 
 @router.post("/", response_model=SessionResponse, summary="Create a session")
+@router.post("", response_model=SessionResponse, include_in_schema=False)
 async def post_session_api(
     subject: str = Body(..., description="Session subject"),
     goal: str | None = Body(None, description="Session goal"),

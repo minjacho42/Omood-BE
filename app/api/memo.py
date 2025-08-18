@@ -17,6 +17,7 @@ from app.models.memo import (
 router = APIRouter()
 
 @router.post("/", summary="Create a memo")
+@router.post("", summary="Create a memo", include_in_schema=False)
 async def post_memo(
     request: Request,
     content: str = Form(...),
